@@ -34,7 +34,7 @@ public class UserController {
     ResponseEntity<ListUserResponse> getUsers() {
         try {
             List<User> user = userService.getAllUsers();
-            return new ResponseEntity<>(new ListUserResponse(200, "Lấy danh sách user thành công" ,user), HttpStatus.CREATED);
+            return new ResponseEntity<>(new ListUserResponse(200, "Lấy danh sách user thành công" ,user), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new ListUserResponse(9999, "Tạo user thất bại"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -44,7 +44,7 @@ public class UserController {
     ResponseEntity<UserResponse> getUser(@PathVariable String userId) {
         try {
             User user = userService.getUser(userId);
-            return new ResponseEntity<>(new UserResponse(200, "Lấy User thành công" ,user), HttpStatus.CREATED);
+            return new ResponseEntity<>(new UserResponse(200, "Lấy User thành công" ,user), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new UserResponse(9999, "Tìm kiếm user thất bại"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -54,9 +54,19 @@ public class UserController {
     ResponseEntity<UserResponse> updateUser(@RequestBody UserUpdateRequest request, @PathVariable String userId) {
         try {
             User user = userService.updateUser(request, userId);
-            return new ResponseEntity<>(new UserResponse(200, "Update User thành công" ,user), HttpStatus.CREATED);
+            return new ResponseEntity<>(new UserResponse(200, "Update User thành công" ,user), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new UserResponse(9999, "Update user thất bại"), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/{userId}")
+    ResponseEntity<UserResponse> deleteUser(@PathVariable String userId) {
+        try {
+            userService.deleteUser(userId);
+            return new ResponseEntity<>(new UserResponse(200, "Xóa User thành công"), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new UserResponse(9999, "Xóa user thất bại"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

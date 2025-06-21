@@ -63,4 +63,15 @@ public class UserService {
             throw new RuntimeException("User không tồn tại: " + e.getMessage(), e);
         }
     }
+
+    public void deleteUser(String id) {
+        try {
+            if (!userRepository.existsById(id)) {
+                throw new RuntimeException("User with ID " + id + " not found");
+            }
+            userRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("User không tồn tại: " + e.getMessage(), e);
+        }
+    }
 }
