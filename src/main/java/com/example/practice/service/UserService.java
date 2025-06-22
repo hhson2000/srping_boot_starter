@@ -3,22 +3,25 @@ package com.example.practice.service;
 import com.example.practice.dto.request.UserCreationRequest;
 import com.example.practice.dto.request.UserUpdateRequest;
 import com.example.practice.entity.User;
-import com.example.practice.exception.UserException;
+import com.example.practice.exception.ErrorCode;
+import com.example.practice.exception.AppException;
 import com.example.practice.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class UserService {
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    public void createRequest(UserCreationRequest request) {
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    public User createRequest(UserCreationRequest request) {
         User user = new User();
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UserException("User đã tồn tại");
+            throw new AppException(ErrorCode.USER_EXIST, "Username already exists");
         }
         user.setUsername(request.getUsername());
         user.setPassword(request.getPassword());
@@ -27,12 +30,10 @@ public class UserService {
         user.setLastname(request.getLastname());
 
         userRepository.save(user);
+        return user;
     }
 
     public User updateUser(UserUpdateRequest request, String id) {
-        if (!userRepository.existsById(id)) {
-            throw new UserException("User không tồn tại");
-        }
         User user = getUser(id);
         user.setPassword(request.getPassword());
         user.setDob(request.getDob());
