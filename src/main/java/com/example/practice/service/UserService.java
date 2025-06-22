@@ -3,6 +3,7 @@ package com.example.practice.service;
 import com.example.practice.dto.request.UserCreationRequest;
 import com.example.practice.dto.request.UserUpdateRequest;
 import com.example.practice.entity.User;
+import com.example.practice.exception.UserException;
 import com.example.practice.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,38 +15,32 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public void setUserRepository(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
     public void createRequest(UserCreationRequest request) {
-        try {
-            User user = new User();
-            user.setUsername(request.getUsername());
-            user.setPassword(request.getPassword());
-            user.setDob(request.getDob());
-            user.setFirstname(request.getFirstname());
-            user.setLastname(request.getLastname());
-
-            userRepository.save(user);
-        } catch (Exception e) {
-            throw new RuntimeException("Tạo user thất bại: " + e.getMessage(), e);
+        User user = new User();
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new UserException("User đã tồn tại");
         }
+        user.setUsername(request.getUsername());
+        user.setPassword(request.getPassword());
+        user.setDob(request.getDob());
+        user.setFirstname(request.getFirstname());
+        user.setLastname(request.getLastname());
+
+        userRepository.save(user);
     }
 
     public User updateUser(UserUpdateRequest request, String id) {
-        try {
-            User user = getUser(id);
-            user.setPassword(request.getPassword());
-            user.setDob(request.getDob());
-            user.setFirstname(request.getFirstname());
-            user.setLastname(request.getLastname());
-
-            userRepository.save(user);
-            return user;
-        } catch (Exception e) {
-            throw new RuntimeException("Update user thất bại: " + e.getMessage(), e);
+        if (!userRepository.existsById(id)) {
+            throw new UserException("User không tồn tại");
         }
+        User user = getUser(id);
+        user.setPassword(request.getPassword());
+        user.setDob(request.getDob());
+        user.setFirstname(request.getFirstname());
+        user.setLastname(request.getLastname());
+
+        userRepository.save(user);
+        return user;
     }
 
     public List<User> getAllUsers() {
