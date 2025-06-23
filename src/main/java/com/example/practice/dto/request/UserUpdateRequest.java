@@ -2,26 +2,24 @@ package com.example.practice.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
 
 import java.time.LocalDate;
 
-@Setter
-@Getter
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserUpdateRequest {
     @NotBlank(message = "Password can not blank")
     @Size(min = 8, message = "Password must be at least 8 characters long")
-    private String password;
-    private String firstname;
-    private String lastname;
-    private LocalDate dob;
-
-    public UserUpdateRequest(String password, String firstname, String lastname, LocalDate dob) {
-        this.password = password;
-        this.firstname = firstname;
-        this.lastname = lastname;
-        this.dob = dob;
-    }
-
+     String password;
+     String firstname;
+     String lastname;
+     LocalDate dob;
 }

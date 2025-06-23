@@ -2,12 +2,11 @@ package com.example.practice.controller;
 
 import com.example.practice.comonResponse.ApiResponse;
 import com.example.practice.comonResponse.ListUserResponse;
-import com.example.practice.comonResponse.UserResponse;
 import com.example.practice.dto.request.UserCreationRequest;
 import com.example.practice.dto.request.UserUpdateRequest;
+import com.example.practice.dto.response.UserResponse;
 import com.example.practice.entity.User;
 import com.example.practice.service.UserService;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,34 +24,43 @@ public class UserController {
     }
 
     @PostMapping
-    public ApiResponse<User> createUser(@RequestBody @Valid UserCreationRequest request) {
-        ApiResponse<User> response = new ApiResponse<>();
+    public ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest request) {
+        ApiResponse<UserResponse> response = new ApiResponse<>();
         response.setResult(userService.createRequest(request));
         return response;
     }
 
     @GetMapping
-    ResponseEntity<ListUserResponse> getUsers() {
-        List<User> user = userService.getAllUsers();
-        return new ResponseEntity<>(new ListUserResponse(200, "Lấy danh sách user thành công", user), HttpStatus.OK);
+    public ApiResponse<List<UserResponse>> getUsers() {
+        ApiResponse<List<UserResponse>> response = new ApiResponse<>();
+        List<UserResponse> users = userService.getAllUsers();
+        response.setResult(users);
+        return response;
     }
 
     @GetMapping("/{userId}")
-    ResponseEntity<UserResponse> getUser(@PathVariable String userId) {
-        User user = userService.getUser(userId);
-        return new ResponseEntity<>(new UserResponse(200, "Lấy User thành công", user), HttpStatus.OK);
+    ApiResponse<UserResponse> getUser(@PathVariable String userId) {
+        UserResponse user = userService.getUser(userId);
+        ApiResponse<UserResponse> response = new ApiResponse<>();
+        response.setResult(user);
+        return response;
     }
 
     @PutMapping("/{userId}")
-    ResponseEntity<UserResponse> updateUser(@RequestBody UserUpdateRequest request, @PathVariable String userId) {
-        User user = userService.updateUser(request, userId);
-        return new ResponseEntity<>(new UserResponse(200, "Update User thành công", user), HttpStatus.OK);
+    ApiResponse<UserResponse> updateUser(@RequestBody UserUpdateRequest request, @PathVariable String userId) {
+        ApiResponse<UserResponse> response = new ApiResponse<>();
+        UserResponse user = userService.updateUser(request, userId);
+        response.setResult(user);
+        return response;
     }
 
     @DeleteMapping("/{userId}")
-    ResponseEntity<UserResponse> deleteUser(@PathVariable String userId) {
+    ApiResponse<User> deleteUser(@PathVariable String userId) {
+        ApiResponse<User> response = new ApiResponse<>();
         userService.deleteUser(userId);
-        return new ResponseEntity<>(new UserResponse(200, "Xóa User thành công"), HttpStatus.OK);
+        response.setMessage("Xóa user thành công");
+        return response;
+
 
     }
 }
