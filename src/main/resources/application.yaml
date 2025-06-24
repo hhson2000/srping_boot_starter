@@ -12,3 +12,5 @@ server:
   servlet:
     context-path: /identity
   port: 8080
+jwt:
+  signingKey: "2hsYeXiFd1X6pmN3L7Z6kXy7wrWlxQkP03tT6d+oOnZljs2ZsFp0eZ82PlHnFZ6/"

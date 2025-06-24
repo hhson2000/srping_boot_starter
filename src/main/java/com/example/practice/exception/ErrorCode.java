@@ -13,6 +13,7 @@ public enum ErrorCode {
     USER_SIZE(3007, "User must be at least 8 characters long"),
     PASSWORD_SIZE(3008, "Password must be at least 8 characters long"),
     USER_NOT_EXIST(3009, "User already exists"),
+    UNAUTHENTICATED(3010, "User is not authenticated"),
     INVALID_ERROR_KEY(3999, "Wrong error key"),
     SYSTEM_ERROR(4444, "System error");
 
