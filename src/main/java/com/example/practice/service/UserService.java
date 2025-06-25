@@ -4,6 +4,7 @@ import com.example.practice.dto.request.UserCreationRequest;
 import com.example.practice.dto.request.UserUpdateRequest;
 import com.example.practice.dto.response.UserResponse;
 import com.example.practice.entity.User;
+import com.example.practice.enums.Role;
 import com.example.practice.exception.ErrorCode;
 import com.example.practice.exception.AppException;
 import com.example.practice.mapper.UserMapper;
@@ -12,12 +13,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
@@ -29,8 +32,10 @@ public class UserService {
             throw new AppException(ErrorCode.USER_EXIST, "Username already exists");
         }
         User user = userMapper.toUser(request);
-        PasswordEncoder encoder = new BCryptPasswordEncoder(10);
-        user.setPassword(encoder.encode(user.getPassword()));
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        HashSet<String> roles = new HashSet<>();
+        roles.add(Role.USER.name());
+        user.setRoles(roles);
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }

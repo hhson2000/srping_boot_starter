@@ -8,12 +8,13 @@ import com.example.practice.dto.response.UserResponse;
 import com.example.practice.entity.User;
 import com.example.practice.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -32,6 +33,11 @@ public class UserController {
 
     @GetMapping
     public ApiResponse<List<UserResponse>> getUsers() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("User: {}", authentication.getName());
+        authentication.getAuthorities().forEach(grantedAuthority -> log.info(
+                "Role: {}", grantedAuthority.getAuthority()
+        ));
         ApiResponse<List<UserResponse>> response = new ApiResponse<>();
         List<UserResponse> users = userService.getAllUsers();
         response.setResult(users);
