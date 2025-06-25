@@ -1,7 +1,6 @@
 package com.example.practice.controller;
 
 import com.example.practice.comonResponse.ApiResponse;
-import com.example.practice.comonResponse.ListUserResponse;
 import com.example.practice.dto.request.UserCreationRequest;
 import com.example.practice.dto.request.UserUpdateRequest;
 import com.example.practice.dto.response.UserResponse;
@@ -66,7 +65,12 @@ public class UserController {
         userService.deleteUser(userId);
         response.setMessage("Xóa user thành công");
         return response;
+    }
 
-
+    @GetMapping("/my-info")
+    ApiResponse<UserResponse> getMyInfo() {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.getMyInfo())
+                .build();
     }
 }

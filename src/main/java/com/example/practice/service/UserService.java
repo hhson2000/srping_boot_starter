@@ -9,23 +9,28 @@ import com.example.practice.exception.ErrorCode;
 import com.example.practice.exception.AppException;
 import com.example.practice.mapper.UserMapper;
 import com.example.practice.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class UserService {
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    UserRepository userRepository;
+    UserMapper userMapper;
     PasswordEncoder passwordEncoder;
-
-    public UserService(UserRepository userRepository, UserMapper userMapper) {
-        this.userRepository = userRepository;
-        this.userMapper = userMapper;
-    }
 
     public UserResponse createRequest(UserCreationRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -33,6 +38,7 @@ public class UserService {
         }
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         HashSet<String> roles = new HashSet<>();
         roles.add(Role.USER.name());
         user.setRoles(roles);
@@ -49,13 +55,16 @@ public class UserService {
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> getAllUsers() {
+        log.info("Get all users");
         List<User> users = userRepository.findAll();
         return userMapper.toUserResponseList(users);
     }
 
+    @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse getUser(String id) {
-
+        log.info("Get user with id: {}", id);
         return userMapper.toUserResponse(userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found")));
 
@@ -70,5 +79,12 @@ public class UserService {
         } catch (Exception e) {
             throw new RuntimeException("User không tồn tại: " + e.getMessage(), e);
         }
+    }
+
+    public UserResponse getMyInfo(){
+        var context = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(context)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
+        return userMapper.toUserResponse(user);
     }
 }
