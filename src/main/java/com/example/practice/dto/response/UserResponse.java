@@ -1,5 +1,6 @@
 package com.example.practice.dto.response;
 
+import com.example.practice.entity.Role;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -17,5 +18,5 @@ public class UserResponse {
      String firstname;
      String lastname;
      LocalDate dob;
-     Set<String> roles;
+     Set<Role> roles;
 }

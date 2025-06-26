@@ -41,7 +41,7 @@ public class UserService {
 
         HashSet<String> roles = new HashSet<>();
         roles.add(Role.USER.name());
-        user.setRoles(roles);
+        //user.setRoles(roles);
         userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
@@ -58,8 +58,7 @@ public class UserService {
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> getAllUsers() {
         log.info("Get all users");
-        List<User> users = userRepository.findAll();
-        return userMapper.toUserResponseList(users);
+        return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
     }
 
     @PostAuthorize("returnObject.username == authentication.name")
