@@ -12,11 +12,13 @@ public enum ErrorCode {
     DUPLICATE_USERNAME(3004, "Username is already taken", HttpStatus.CONFLICT),
     USER_INVALID(3005, "User invalid", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(3006, "Password invalid", HttpStatus.BAD_REQUEST),
-    USER_SIZE(3007, "User must be at least 8 characters long", HttpStatus.BAD_REQUEST),
-    PASSWORD_SIZE(3008, "Password must be at least 8 characters long", HttpStatus.BAD_REQUEST),
+    USER_SIZE(3007, "User must be at least {min} characters long", HttpStatus.BAD_REQUEST),
+    PASSWORD_SIZE(3008, "Password must be at least {min} characters long", HttpStatus.BAD_REQUEST),
     USER_NOT_EXIST(3009, "User already exists", HttpStatus.CONFLICT),
     UNAUTHENTICATED(3010, "User is not authenticated", HttpStatus.UNAUTHORIZED),
+    INVALID_DOB(3011, "Your age must be at least {min} years old", HttpStatus.BAD_REQUEST),
     UNAUTHORIZE(3010, "Access denied", HttpStatus.UNAUTHORIZED),
+
     INVALID_ERROR_KEY(3999, "Wrong error key", HttpStatus.BAD_REQUEST),
     SYSTEM_ERROR(4444, "System error", HttpStatus.INTERNAL_SERVER_ERROR);
 
