@@ -29,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -43,6 +45,14 @@ public class AuthenticationService {
     @NonFinal
     @Value("${jwt.signingKey}")
     protected String SIGNING_KEY;
+
+    @NonFinal
+    @Value("${jwt.valid-duration}")
+    protected long VALID_DURATION;
+
+    @NonFinal
+    @Value("${jwt.refreshable-duration}")
+    protected long REFRESHABLE_DURATION;
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         var user = userRepository.findByUsername(request.getUsername())
@@ -63,7 +73,7 @@ public class AuthenticationService {
         var token = request.getToken();
         boolean isValid = true;
         try {
-            verifyToken(token);
+            verifyToken(token, false);
         } catch (AppException e) {
             isValid = false;
         }
@@ -78,7 +88,7 @@ public class AuthenticationService {
                 subject(user.getUsername())
                 .issuer("http://localhost:8080")
                 .issueTime(new Date())
-                .expirationTime(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                 .claim("scope", buildScope(user))
                 .jwtID(UUID.randomUUID().toString())
                 .build();
@@ -109,20 +119,23 @@ public class AuthenticationService {
     }
 
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
-        var signedToken = verifyToken(request.getToken());
-        String jit = signedToken.getJWTClaimsSet().getJWTID();
-        Date expirationDate = signedToken.getJWTClaimsSet().getExpirationTime();
-        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                .id(jit)
-                .expiryTime(expirationDate)
-                .build();
-        invalidatedTokenRepository.save(invalidatedToken);
-
+        try {
+            var signedToken = verifyToken(request.getToken(), true);
+            String jit = signedToken.getJWTClaimsSet().getJWTID();
+            Date expirationDate = signedToken.getJWTClaimsSet().getExpirationTime();
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                    .id(jit)
+                    .expiryTime(expirationDate)
+                    .build();
+            invalidatedTokenRepository.save(invalidatedToken);
+        } catch (AppException e) {
+            log.info("Token already expiry or invalid: {}", request.getToken());
+        }
     }
 
     public AuthenticationResponse refreshToken(RefreshRequest request)
             throws ParseException, JOSEException {
-        var signingKey = verifyToken(request.getToken());
+        var signingKey = verifyToken(request.getToken(), true);
         var jit = signingKey.getJWTClaimsSet().getJWTID();
         var expiryTime = signingKey.getJWTClaimsSet().getExpirationTime();
         InvalidatedToken invalidatedToken = InvalidatedToken.builder()
@@ -139,10 +152,12 @@ public class AuthenticationService {
                 .build();
     }
 
-    private SignedJWT verifyToken(String token) throws ParseException, JOSEException {
+    private SignedJWT verifyToken(String token, boolean isRefresh) throws ParseException, JOSEException {
         JWSVerifier verifier = new MACVerifier(SIGNING_KEY.getBytes());
         SignedJWT signedJWT = SignedJWT.parse(token);
-        Date expirationDate = signedJWT.getJWTClaimsSet().getExpirationTime();
+        Date expirationDate = (isRefresh)
+                ? new Date(signedJWT.getJWTClaimsSet().getIssueTime().toInstant().plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS).toEpochMilli())
+                : signedJWT.getJWTClaimsSet().getExpirationTime();
         var verified = signedJWT.verify(verifier);
         if (!verified) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
