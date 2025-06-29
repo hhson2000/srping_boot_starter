@@ -2,11 +2,14 @@ package com.example.practice.service;
 
 import com.example.practice.dto.request.AuthenticationRequest;
 import com.example.practice.dto.request.IntrospectRequest;
+import com.example.practice.dto.request.LogoutRequest;
 import com.example.practice.dto.response.AuthenticationResponse;
 import com.example.practice.dto.response.IntrospectResponse;
+import com.example.practice.entity.InvalidatedToken;
 import com.example.practice.entity.User;
 import com.example.practice.exception.AppException;
 import com.example.practice.exception.ErrorCode;
+import com.example.practice.repository.InvalidatedTokenRepository;
 import com.example.practice.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -27,6 +30,7 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -34,6 +38,7 @@ import java.util.StringJoiner;
 @RequiredArgsConstructor
 public class AuthenticationService {
     UserRepository userRepository;
+    InvalidatedTokenRepository invalidatedTokenRepository;
     @NonFinal
     @Value("${jwt.signingKey}")
     protected String SIGNING_KEY;
@@ -55,21 +60,14 @@ public class AuthenticationService {
 
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
-        JWSVerifier verifier = new MACVerifier(SIGNING_KEY.getBytes());
-        SignedJWT signedJWT = SignedJWT.parse(token);
-        Date expirationDate = signedJWT.getJWTClaimsSet().getExpirationTime();
-        if (expirationDate.before(new Date())) {
-            return IntrospectResponse.builder()
-                    .valid(false)
-                    .build();
-        }
-        if (signedJWT.verify(verifier)) {
-            return IntrospectResponse.builder()
-                    .valid(true)
-                    .build();
+        boolean isValid = true;
+        try {
+            verifyToken(token);
+        } catch (AppException e) {
+            isValid = false;
         }
         return IntrospectResponse.builder()
-                .valid(false)
+                .valid(isValid)
                 .build();
     }
 
@@ -81,6 +79,7 @@ public class AuthenticationService {
                 .issueTime(new Date())
                 .expirationTime(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .claim("scope", buildScope(user))
+                .jwtID(UUID.randomUUID().toString())
                 .build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
         JWSObject jwsObject = new JWSObject(jwsHeader, payload);
@@ -106,5 +105,35 @@ public class AuthenticationService {
             });
         }
         return stringJoiner.toString();
+    }
+
+    public void logout(LogoutRequest request) throws ParseException, JOSEException {
+        var signedToken = verifyToken(request.getToken());
+        String jit = signedToken.getJWTClaimsSet().getJWTID();
+        Date expirationDate = signedToken.getJWTClaimsSet().getExpirationTime();
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expirationDate)
+                .build();
+        invalidatedTokenRepository.save(invalidatedToken);
+
+    }
+
+    private SignedJWT verifyToken(String token) throws ParseException, JOSEException {
+        JWSVerifier verifier = new MACVerifier(SIGNING_KEY.getBytes());
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        Date expirationDate = signedJWT.getJWTClaimsSet().getExpirationTime();
+        var verified = signedJWT.verify(verifier);
+        if (!verified) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        if (expirationDate.before(new Date())) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        var invalidatedToken = invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID());
+        if (invalidatedToken) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        return signedJWT;
     }
 }
