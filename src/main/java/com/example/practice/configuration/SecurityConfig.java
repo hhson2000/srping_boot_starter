@@ -24,7 +24,8 @@ import javax.crypto.spec.SecretKeySpec;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-    private final String[] PUBLIC_URLS = {"/users", "/auth/login", "/auth/introspect", "/auth/logout"};
+    private final String[] PUBLIC_URLS = {"/users", "/auth/login"
+            , "/auth/introspect", "/auth/logout","/auth/refresh"};
 //    private final String[] ADMIN_URLS = {"/users"};
 //    private final String[] USER_URLS = {"/users/{userId}"};
     @Autowired

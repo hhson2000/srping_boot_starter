@@ -3,6 +3,7 @@ package com.example.practice.service;
 import com.example.practice.dto.request.AuthenticationRequest;
 import com.example.practice.dto.request.IntrospectRequest;
 import com.example.practice.dto.request.LogoutRequest;
+import com.example.practice.dto.request.RefreshRequest;
 import com.example.practice.dto.response.AuthenticationResponse;
 import com.example.practice.dto.response.IntrospectResponse;
 import com.example.practice.entity.InvalidatedToken;
@@ -117,6 +118,25 @@ public class AuthenticationService {
                 .build();
         invalidatedTokenRepository.save(invalidatedToken);
 
+    }
+
+    public AuthenticationResponse refreshToken(RefreshRequest request)
+            throws ParseException, JOSEException {
+        var signingKey = verifyToken(request.getToken());
+        var jit = signingKey.getJWTClaimsSet().getJWTID();
+        var expiryTime = signingKey.getJWTClaimsSet().getExpirationTime();
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+        invalidatedTokenRepository.save(invalidatedToken);
+        var user = userRepository.findByUsername(signingKey.getJWTClaimsSet().getSubject())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
+        var token = generateToken(user);
+        return AuthenticationResponse.builder()
+                .authenticated(true)
+                .token(token)
+                .build();
     }
 
     private SignedJWT verifyToken(String token) throws ParseException, JOSEException {
