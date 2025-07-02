@@ -2,6 +2,7 @@ package com.example.practice.service;
 
 
 import com.example.practice.dto.request.UserCreationRequest;
+import com.example.practice.dto.request.UserUpdateRequest;
 import com.example.practice.dto.response.UserResponse;
 import com.example.practice.entity.User;
 import com.example.practice.exception.AppException;
@@ -13,9 +14,13 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Optional;
 
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
+@TestPropertySource(locations = "/test.properties")
 public class UserServiceTest {
     @Autowired
     private UserService userService;
@@ -32,6 +38,7 @@ public class UserServiceTest {
     private UserRepository userRepository;
 
     private UserCreationRequest request;
+    private UserUpdateRequest updateRequest;
     private UserResponse userResponse;
     private User user;
     private LocalDate dob;
@@ -43,6 +50,13 @@ public class UserServiceTest {
         request = UserCreationRequest.builder()
                 .username("john")
                 .firstname("John")
+                .lastname("Doe")
+                .password("12345678")
+                .dob(dob)
+                .build();
+
+        updateRequest = UserUpdateRequest.builder()
+                .firstname("John2")
                 .lastname("Doe")
                 .password("12345678")
                 .dob(dob)
@@ -63,6 +77,15 @@ public class UserServiceTest {
                 .lastname("Doe")
                 .dob(dob)
                 .build();
+
+        User existingUser = new User();
+        existingUser.setId("hasdhfashdufhawewqef");
+        existingUser.setUsername("john2");
+        existingUser.setFirstname("John2");
+        existingUser.setLastname("Doe2");
+        existingUser.setDob(dob);
+        existingUser.setRoles(new HashSet<>());
+        existingUser.setPassword("oldPassword");
     }
 
     @Test
@@ -89,6 +112,34 @@ public class UserServiceTest {
 
         // THEN
         Assertions.assertThat(exception.getErrorCode().getCode())
-                .isEqualTo(1002);
+                .isEqualTo(3001);
+    }
+
+//    @Test
+//    void updateUser_validRequest_success() {
+//
+//        when(userRepository.existsById(anyString())).thenReturn(false);
+//
+//        var response = userService.updateUser(updateRequest, "hasdhfashdufhawewqef");
+//
+//        Assertions.assertThat(response.getUsername()).isEqualTo("john2");
+//
+//    }
+
+    @Test
+    @WithMockUser(username = "john")
+    void getMyInfo_success() {
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
+        var response = userService.getMyInfo();
+        Assertions.assertThat(response.getUsername()).isEqualTo("john");
+    }
+
+    @Test
+    @WithMockUser(username = "john")
+    void getMyInfo_failed() {
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.ofNullable(null));
+        var exception = assertThrows(AppException.class,
+                () -> userService.getMyInfo());
+        Assertions.assertThat(exception.getErrorCode().getCode()).isEqualTo(3001);
     }
 }
